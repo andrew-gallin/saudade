@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package com.saudade;
+
+message TrainingPhraseRequest {
+    string training_phrase = 1;
+}
