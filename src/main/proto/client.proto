@@ -1,7 +1,18 @@
 syntax = "proto3";
 
 package com.saudade;
+option java_package = "com.saudade.grpc";
+
+
 
 message TrainingPhraseRequest {
-    string training_phrase = 1;
+    string training_target = 1;
+}
+
+message TrainingPhraseResponse {
+    repeated string training_phrase = 1;
+}
+
+service Chat {
+    rpc GetTrainingPhrases(TrainingPhraseRequest) returns (stream TrainingPhraseRequest) {}
 }

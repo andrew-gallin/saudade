@@ -1,4 +1,4 @@
-package com.saudade;
+package com.saudade.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
