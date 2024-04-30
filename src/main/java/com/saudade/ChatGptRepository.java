@@ -2,35 +2,45 @@ package com.saudade;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
 import okhttp3.*;
 
 import javax.inject.Inject;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class ChatGptRepository {
 
-    private OkHttpClient httpClient;
-    private ObjectMapper mapper;
+    private final OkHttpClient httpClient;
+    private final ObjectMapper mapper;
+    private final String apiKey;
 
     @Inject
-    public ChatGptRepository(OkHttpClient httpClient, ObjectMapper objectMapper){
+    public ChatGptRepository(OkHttpClient httpClient,
+                             ObjectMapper objectMapper,
+                             String apiKey) {
         this.httpClient = httpClient;
         this.mapper = objectMapper;
+        mapper.registerModule(new ParameterNamesModule());
+        mapper.registerModule(new GuavaModule());
+        this.apiKey = apiKey;
     }
 
-    public String sendMessage(String text)  {
-        String url = "https://api.openai.com/v1/completions";
-
-        System.out.println(text);
+    public String sendMessage(String text) {
+        String url = "https://api.openai.com/v1/chat/completions";
 
         ChatGPTRequest chatGptrequest = ChatGPTRequest.builder()
-                .model("text-davinci-003")
-                .prompt(text)
+                .model("gpt-3.5-turbo")
+                .addMessage(ImmutableChatGptMessage.builder()
+                        .role(Role.USER)
+                        .content(text)
+                        .build())
                 .maxTokens(4000)
                 .temperature(1.0)
+                .topP(1)
+                .frequencyPenalty(0)
+                .presencePenalty(0)
                 .build();
 
         String jsonBody = null;
@@ -45,26 +55,41 @@ public class ChatGptRepository {
         Request request = new Request.Builder()
                 .url(url)
                 .post(body)
-                //TODO: grab API key from env
-                .addHeader("Authorization", "Bearer YOUR_API_KEY")
+                .addHeader("Authorization", "Bearer " + apiKey)
                 .addHeader("Content-Type", "application/json")
                 .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+        String jsonResponse = "{\"id\":\"chatcmpl-9JUlUZl3AWaDjbHeBDkkaFa02LFjJ\",\"object\":\"chat.completion\",\"created\":1714433520,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello! How can I assist you today?\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":8,\"completion_tokens\":9,\"total_tokens\":17},\"system_fingerprint\":\"fp_3b956da36b\"}";
 
-            // Assuming the response is in JSON format and contains a field called 'choices' with text content
-            if (response.body() != null) {
-                return mapper.readTree(response.body().string())
-                        .get("choices").get(0).get("text").asText();
-            }
-            else {
-                //TODO: This shit should be injected
-                Logger.getAnonymousLogger().log(Level.INFO, "no response");
-            }
-        } catch (IOException e) {
+        String json = "{\"id\":\"chatcmpl-9JUlUZl3AWaDjbHeBDkkaFa02LFjJ\"}";
+        System.out.println(json);
+
+        ImmutableChatResponse chatResponse = null;
+        try {
+             chatResponse = mapper.readValue(jsonResponse, ImmutableChatResponse.class);
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+        System.out.println(chatResponse.choices());
+//        try (Response response = httpClient.newCall(request).execute()) {
+//            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+//
+//            // Assuming the response is in JSON format and contains a field called 'choices' with text content
+//            if (response.body() != null) {
+////                JsonNode mapped = mapper.readTree(response.body().string());
+//                ChatResponse chatResponse = mapper.readValue(response.body().string(), ChatResponse.class);
+//
+//                System.out.println(chatResponse.toString());
+//                return mapper.readTree(response.body().string())
+//                        .get("choices").get(0).get("text").asText();
+//            }
+//            else {
+//                //TODO: This shit should be injected
+//                Logger.getAnonymousLogger().log(Level.INFO, "no response");
+//            }
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 
 
         return "you";
