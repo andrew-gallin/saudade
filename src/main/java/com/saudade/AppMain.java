@@ -28,9 +28,7 @@ public class AppMain {
                 .map(line -> ModifiableTranslationPair.create().setOriginal(line))
                 .collect(Collectors.toList());
 
-        translationPairs.forEach(pair -> {
-            System.out.println(pair.original());
-        });
+        translationPairs.forEach(pair -> System.out.println(pair.original()));
 
     }
 }
